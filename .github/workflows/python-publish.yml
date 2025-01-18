@@ -1,0 +1,198 @@
+# This workflow will upload a Python Package to PyPI when a release is created
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Upload Python Package
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  release-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Build release distributions
+        run: |
+          # NOTE: put your own distribution build steps here.
+          python -m pip install build
+          python -m build
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dists
+          path: dist/
+
+  pypi-publish:
+    runs-on: ubuntu-latest
+    needs:
+      - release-build
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+
+    # Dedicated environments with protections for publishing are strongly recommended.
+    # For more information, see: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules
+    environment:
+      name: pypi
+      # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
+      # url: https://pypi.org/p/YOURPROJECT
+      #
+      # ALTERNATIVE: if your GitHub Release name is the PyPI project version string
+      # ALTERNATIVE: exactly, uncomment the following line instead:
+      # url: https://pypi.org/project/YOURPROJECT/${{ github.event.release.name }}
+
+    steps:
+      - name: Retrieve release distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dists
+          path: dist/
+
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+
+
+import pygame
+import sys
+
+# Initialize Pygame
+pygame.init()
+
+# Screen dimensions
+WIDTH, HEIGHT = 800, 400
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Rat Race Simulator")
+
+# Colors
+WHITE = (255, 255, 255)
+GRAY = (200, 200, 200)
+
+# Rat (a simple rectangle for now)
+rat_width, rat_height = 50, 30
+rat_x, rat_y = 100, HEIGHT // 2
+rat_speed = 5
+
+# Game loop
+running = True
+while running:
+    screen.fill(WHITE)  # Clear screen
+
+    # Handle events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Key input for rat movement
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_UP] and rat_y > 0:
+        rat_y -= rat_speed
+    if keys[pygame.K_DOWN] and rat_y < HEIGHT - rat_height:
+        rat_y += rat_speed
+
+    # Draw the rat
+    pygame.draw.rect(screen, GRAY, (rat_x, rat_y, rat_width, rat_height))
+
+    # Update the screen
+    pygame.display.flip()
+    pygame.time.Clock().tick(60)  # Limit to 60 FPS
+
+pygame.quit()
+sys.exit()
+import random
+
+# Coin settings
+coin_radius = 10
+coin_x = random.randint(200, WIDTH - coin_radius)
+coin_y = random.randint(0, HEIGHT - coin_radius)
+score = 0
+
+# Add to the main loop
+while running:
+    screen.fill(WHITE)
+
+    # Handle events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Key input for rat movement
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_UP] and rat_y > 0:
+        rat_y -= rat_speed
+    if keys[pygame.K_DOWN] and rat_y < HEIGHT - rat_height:
+        rat_y += rat_speed
+
+    # Check for collision with the coin
+    if abs(rat_x + rat_width // 2 - coin_x) < coin_radius and abs(rat_y + rat_height // 2 - coin_y) < coin_radius:
+        score += 1
+        coin_x = random.randint(200, WIDTH - coin_radius)
+        coin_y = random.randint(0, HEIGHT - coin_radius)
+
+    # Draw the rat and the coin
+    pygame.draw.rect(screen, GRAY, (rat_x, rat_y, rat_width, rat_height))
+    pygame.draw.circle(screen, (255, 215, 0), (coin_x, coin_y), coin_radius)
+
+    # Display the score
+    font = pygame.font.Font(None, 36)
+    text = font.render(f"Score: {score}", True, (0, 0, 0))
+    screen.blit(text, (10, 10))
+
+    pygame.display.flip()
+    pygame.time.Clock().tick(60)
+
+pygame.quit()
+sys.exit()
+# Add a speed increment mechanism
+speed_increment = 0.01  # Speed increases by this amount every frame
+game_time = 0  # Keep track of time in frames
+
+while running:
+    game_time += 1
+    rat_speed += speed_increment
+
+    # Rest of the game loop stays the same
+    # ...
+# Game over condition
+time_limit = 300  # Frames to collect a coin
+time_since_last_coin = 0
+
+while running:
+    game_time += 1
+    time_since_last_coin += 1
+
+    # Increase speed over time
+    rat_speed += speed_increment
+
+    # Game over if the rat fails to collect a coin in time
+    if time_since_last_coin > time_limit:
+        print(f"Game Over! Final Score: {score}")
+        running = False
+
+    # Check for collision with the coin
+    if abs(rat_x + rat_width // 2 - coin_x) < coin_radius and abs(rat_y + rat_height // 2 - coin_y) < coin_radius:
+        score += 1
+        time_since_last_coin = 0  # Reset the timer
+        coin_x = random.randint(200, WIDTH - coin_radius)
+        coin_y = random.randint(0, HEIGHT - coin_radius)
+
+    # Draw the rat, coin, and score
+    # ...
